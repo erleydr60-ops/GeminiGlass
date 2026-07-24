@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gemini HUD - Ray-Ban Display</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #00FF66;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            background: #000000;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #00FF66;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .status {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        #config-section {
+            margin-bottom: 12px;
+        }
+
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            background: #001100;
+            border: 1px solid #00FF66;
+            color: #00FF66;
+            font-size: 14px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            flex: 1;
+            padding: 10px;
+            background: #003311;
+            border: 1px solid #00FF66;
+            color: #00FF66;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        button:active {
+            background: #00FF66;
+            color: #000000;
+        }
+
+        #response-container {
+            flex: 1;
+            border: 1px solid #004411;
+            border-radius: 4px;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 16px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .loading {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        /* Optimization for dark HUD display */
+        ::placeholder {
+            color: #006622;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <span class="title">GEMINI AI HUD</span>
+        <span id="status-tag" class="status">READY</span>
+    </header>
+
+    <div id="config-section">
+        <input type="password" id="api-key" placeholder="Pega tu Gemini API Key aquí..." />
+        <input type="text" id="prompt-input" placeholder="Escribe tu consulta..." />
+        <div class="btn-group">
+            <button onclick="sendQuery()">Enviar</button>
+            <button onclick="clearScreen()" style="background:#220000; border-color:#FF3333; color:#FF3333;">Limpiar</button>
+        </div>
+    </div>
+
+    <div id="response-container">
+        Esperando consulta... Configura tu API Key si no la has guardado.
+    </div>
+
+    <script>
+        // Cargar API Key de LocalStorage si está guardada
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedKey = localStorage.getItem("gemini_api_key");
+            if (savedKey) {
+                document.getElementById("api-key").value = savedKey;
+            }
+        });
+
+        async function sendQuery() {
+            const apiKeyInput = document.getElementById("api-key").value.trim();
+            const promptInput = document.getElementById("prompt-input").value.trim();
+            const outputBox = document.getElementById("response-container");
+            const statusTag = document.getElementById("status-tag");
+
+            if (!apiKeyInput) {
+                alert("Por favor ingresa tu API Key de Gemini.");
+                return;
+            }
+
+            if (!promptInput) {
+                alert("Por favor escribe una consulta.");
+                return;
+            }
+
+            // Guardar clave localmente
+            localStorage.setItem("gemini_api_key", apiKeyInput);
+
+            statusTag.innerText = "BUSCANDO...";
+            statusTag.classList.add("loading");
+            outputBox.innerText = "Procesando respuesta con Gemini...";
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKeyInput}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptInput }] }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    const text = data.candidates[0].content.parts[0].text;
+                    outputBox.innerText = text;
+                    statusTag.innerText = "OK";
+                } else if (data.error) {
+                    outputBox.innerText = "Error API: " + data.error.message;
+                    statusTag.innerText = "ERROR";
+                } else {
+                    outputBox.innerText = "Respuesta no válida recibida.";
+                    statusTag.innerText = "ERROR";
+                }
+            } catch (err) {
+                outputBox.innerText = "Error de conexión: " + err.message;
+                statusTag.innerText = "NET ERROR";
+            } finally {
+                statusTag.classList.remove("loading");
+                document.getElementById("prompt-input").value = "";
+            }
+        }
+
+        function clearScreen() {
+            document.getElementById("response-container").innerText = "Pantalla limpia.";
+            document.getElementById("status-tag").innerText = "READY";
+        }
+    </script>
+</body>
+</html>
