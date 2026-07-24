@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HUD AI Launcher</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #00FF66;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        body {
+            width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px;
+            border: 2px solid #00FF66;
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #00FF66;
+            padding-bottom: 12px;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            justify-content: center;
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .ai-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 140px;
+            background: #002208;
+            border: 3px solid #00FF66;
+            color: #00FF66;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Resaltado para gestos de las Meta */
+        .ai-btn:focus, .ai-btn:active {
+            background: #00FF66;
+            color: #000000;
+            border-color: #FFFFFF;
+            transform: scale(0.98);
+        }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.6;
+            border-top: 1px solid #004411;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title">HUD AI LAUNCHER</div>
+        <div class="subtitle">SELECCIONA IA</div>
+    </header>
+
+    <div class="menu-container">
+        <!-- Botón 1: Gemini -->
+        <button class="ai-btn" onclick="openUrl('https://gemini.google.com')" tabindex="1">
+            🟢 GEMINI AI
+        </button>
+
+        <!-- Botón 2: ChatGPT -->
+        <button class="ai-btn" onclick="openUrl('https://chatgpt.com')" tabindex="2">
+            🟢 CHATGPT
+        </button>
+    </div>
+
+    <footer>
+        DISPLAY RESOLUTION: 600x600 PX
+    </footer>
+
+    <script>
+        function openUrl(url) {
+            // Redirige en la misma ventana para evitar bloqueos de pop-ups en el visor
+            window.top.location.href = url;
+        }
+    </script>
+
+</body>
+</html>
