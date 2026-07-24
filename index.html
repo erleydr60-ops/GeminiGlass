@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HUD AI GLASS</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #00FF66;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+            touch-action: manipulation;
+        }
+
+        body {
+            width: 600px;
+            height: 600px;
+            margin: 0 auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            border: 2px solid #00FF66;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #00FF66;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .status {
+            font-size: 12px;
+        }
+
+        .inputs-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #001100;
+            border: 2px solid #00FF66;
+            color: #00FF66;
+            font-size: 15px;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        input:focus {
+            background: #002208;
+            border-color: #FFFFFF;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            background: #003311;
+            border: 2px solid #00FF66;
+            color: #00FF66;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            outline: none;
+        }
+
+        button:focus, button:active {
+            background: #00FF66 !important;
+            color: #000000 !important;
+            border-color: #FFFFFF !important;
+        }
+
+        #response-box {
+            flex: 1;
+            border: 2px solid #004411;
+            border-radius: 6px;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 15px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <span class="title">HUD AI SYSTEM</span>
+        <span id="status-tag" class="status">READY</span>
+    </header>
+
+    <div class="inputs-container">
+        <!-- Input 1: API Key con tabindex para gestos -->
+        <input type="password" id="api-key" placeholder="Pega tu API Key aquí..." tabindex="1" />
+        
+        <!-- Input 2: Consulta con foco automático -->
+        <input type="text" id="prompt-input" placeholder="Escribe consulta y presiona Enter..." tabindex="2" autofocus />
+        
+        <div class="btn-group">
+            <button id="send-btn" onclick="sendQuery()" tabindex="3">CONSULTAR</button>
+            <button onclick="clearKey()" style="background:#220000; border-color:#FF3333; color:#FF3333; flex:0.3;" tabindex="4">BORRAR</button>
+        </div>
+    </div>
+
+    <div id="response-box">
+        Ingresa tu API Key (se guarda automáticamente). Escribe tu pregunta y presiona Enter.
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedKey = localStorage.getItem("gemini_api_key");
+            if (savedKey) {
+                document.getElementById("api-key").value = savedKey;
+            }
+
+            const promptInput = document.getElementById("prompt-input");
+            promptInput.focus();
+
+            // Atrapar Enter desde el teclado o gesto de confirmación
+            promptInput.addEventListener("keydown", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    sendQuery();
+                }
+            });
+        });
+
+        async function sendQuery() {
+            const apiKeyInput = document.getElementById("api-key").value.trim();
+            const promptInput = document.getElementById("prompt-input").value.trim();
+            const outputBox = document.getElementById("response-box");
+            const statusTag = document.getElementById("status-tag");
+
+            if (!apiKeyInput) {
+                outputBox.innerText = "Error: Pega tu API Key de Google AI Studio.";
+                return;
+            }
+
+            if (!promptInput) {
+                outputBox.innerText = "Error: Escribe una pregunta.";
+                return;
+            }
+
+            localStorage.setItem("gemini_api_key", apiKeyInput);
+
+            statusTag.innerText = "PROCESANDO...";
+            outputBox.innerText = "Enviando consulta a Gemini...";
+
+            // Endpoint corregido usando v1beta
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKeyInput}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: "Responde de forma concisa y directa para un visor HUD: " + promptInput }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    outputBox.innerText = data.candidates[0].content.parts[0].text;
+                    statusTag.innerText = "OK";
+                } else if (data.error) {
+                    outputBox.innerText = "Error API: " + data.error.message;
+                    statusTag.innerText = "ERROR";
+                } else {
+                    outputBox.innerText = "Sin respuesta del modelo.";
+                    statusTag.innerText = "EMPTY";
+                }
+            } catch (err) {
+                outputBox.innerText = "Error de red: " + err.message + "\n\nVerifica que la API Key sea válida.";
+                statusTag.innerText = "NET ERROR";
+            } finally {
+                document.getElementById("prompt-input").value = "";
+            }
+        }
+
+        function clearKey() {
+            localStorage.removeItem("gemini_api_key");
+            document.getElementById("api-key").value = "";
+            document.getElementById("response-box").innerText = "Clave borrada.";
+            document.getElementById("status-tag").innerText = "RESET";
+        }
+    </script>
+</body>
+</html>
